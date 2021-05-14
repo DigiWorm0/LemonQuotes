@@ -86,3 +86,12 @@ typings/
 
 # DynamoDB Local files
 .dynamodb/
+
+# TypeScript compiled filed
+*.js
+
+# SQLite DB
+lemondb.sqlite
+
+# Matrix DB
+matrix-db.json

@@ -1,0 +1,16 @@
+{
+    "discord": {
+        "key":"",
+        "channel":"",
+        "channels": [
+            ""
+        ],
+        "msginterval": 1000
+    },
+    "matrix": {
+        "server":"",
+        "key":"",
+        "room":"",
+        "msginterval": 1000
+    }
+}
