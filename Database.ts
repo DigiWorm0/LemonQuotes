@@ -1,21 +1,17 @@
 import * as Keyv from "keyv";
 import * as Colors from "colors";
+import { EventHandler } from "./EventHandler"
+import { Quote } from "./Quote";
 
-const DBLocation = 'sqlite://lemondb.sqlite';
+const DBLocation = 'sqlite://lemon-db.sqlite';
 
 /**
  * Represents a Lemon Quote Database
  */
 export class DBManager {
     static db: Keyv;
-
-    /**
-     * Initializes the Database Manager
-     */
-    constructor()
-    {
-        DBManager.init();
-    }
+    static quotes: any;
+    static authors: any;
 
     /**
      * Initializes the Database Manager
@@ -24,12 +20,18 @@ export class DBManager {
     {
         DBManager.db = new Keyv(DBLocation);
         DBManager.db.on('error', DBManager.onError.bind(DBManager));
+        DBManager.quotes = await DBManager.db.get("quotes");
+        DBManager.authors = await DBManager.db.get("authors");
+
+        EventHandler.onQuote(this.onQuote.bind(this));
 
         if (await DBManager.db.get("initialized"))
             return;
 
-        DBManager.db.set("quotes", {"Unknown":[]});
-        DBManager.db.set("initialized", true);
+        await DBManager.db.set("quotes", {"Unknown":[]});
+        await DBManager.db.set("authors", {"Unknown":"Unknown"});
+        await DBManager.db.set("initialized", true);
+        await this.init();
     }
 
     /**
@@ -37,23 +39,64 @@ export class DBManager {
      * @param author - ID of the quote's author (or 'unknown')
      * @param quote - Quote in question
      */
-    static async addQuote(author: string, quote: string)
+    static addQuote(quote: Quote)
     {
-        let quotes = await this.db.get("quotes");
-        if (!(author in quotes))
-            quotes[author] = [];
-        quotes[author].push(quote);
-        this.db.set("quotes", quotes);
+        if (!(quote.authorId in DBManager.quotes))
+            DBManager.quotes[quote.authorId] = [];
+        if (!(quote.authorId in DBManager.authors))
+            DBManager.setAuthorName(quote.authorId, quote.authorName);
+        DBManager.quotes[quote.authorId].push(quote.text);
+        this.db.set("quotes", DBManager.quotes);
     }
 
     /**
      * Gets all of a specific author's quotes
-     * @param author - ID of the quote's author (or 'unknown')
-     * @returns all of the author's quotes in a promise
+     * @param id - ID of the quote's author (or 'unknown')
+     * @returns all of the author's quotes
      */
-    static async getQuote(author: string): Promise<string[]>
+    static getQuotesByAuthor(id: string): Quote[]
     {
-        return await this.db.get("quotes")[author];
+        let textList = DBManager.quotes[id];
+        let authorName = this.getAuthorName(id);
+        let quoteList = new Array<Quote>();
+        textList.forEach(text => {
+            quoteList.push(new Quote(
+                authorName,
+                id,
+                text
+            ));
+        });
+        return quoteList;
+    }
+
+    /**
+     * Gets every quote author
+     * @returns A list of every quote author
+     */
+    static getAllAuthors(): string[]
+    {
+        return Object.keys(DBManager.quotes);
+    }
+
+    /**
+     * Gets the name of a quote author
+     * @param id - Id of the Author
+     * @returns Author Name
+     */
+    static getAuthorName(id: string): string
+    {
+        return this.authors[id];
+    }
+
+     /**
+     * Sets the name of a quote author
+     * @param id - Id of the Author
+     * @param name - Name of the Author
+     */
+    static setAuthorName(id: string, name: string)
+    {
+        DBManager.authors[id] = name;
+        DBManager.db.set("authors", DBManager.authors);
     }
 
     /**
@@ -61,9 +104,9 @@ export class DBManager {
      * @param author - ID of the quote's author
      * @param txt - The quote in question
      */
-    static async onQuote(author: string, txt: string)
+    static async onQuote(quote: Quote)
     {
-        this.addQuote(author, txt);
+        this.addQuote(quote);
     }
     
     /**

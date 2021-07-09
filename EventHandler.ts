@@ -1,6 +1,10 @@
 import * as Event from "events"
 import * as Colors from "colors";
+import { Quote } from "./Quote";
 
+/**
+ * Handles Global Events
+ */
 export class EventHandler
 {
     static emitter: Event.EventEmitter;
@@ -14,7 +18,7 @@ export class EventHandler
      * Fires callback function when a new quote is received
      * @param callback Callback function to fire
      */
-    static onQuote(callback: (author: string, txt: string) => void)
+    static onQuote(callback: (quote: Quote) => void)
     {
         EventHandler.emitter.addListener("newQuote", callback);
     }
@@ -24,9 +28,9 @@ export class EventHandler
      * @param author - Author of the quote
      * @param txt - The quote in question
      */
-    static sendQuote(author: string, txt: string)
+    static sendQuote(quote: Quote)
     {
-        console.log(Colors.gray(txt))
-        EventHandler.emitter.emit("newQuote", author, txt);
+        console.log(Colors.gray(quote.text + " - " + quote.authorName));
+        EventHandler.emitter.emit("newQuote", quote);
     }
 }

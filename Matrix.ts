@@ -1,7 +1,9 @@
 import * as Matrix from "matrix-bot-sdk";
 import * as Colors from "colors";
 import { EventHandler } from "./EventHandler";
-import Config from "./config.json";
+import * as Config from "./Config.json"
+import { Message } from "./Message"
+import { Quote } from "./Quote";
 
 /**
  * Represents a Matrix Client
@@ -9,7 +11,7 @@ import Config from "./config.json";
 export class MatrixHandler {
     client: Matrix.MatrixClient;
     storage: Matrix.SimpleFsStorageProvider;
-    msgsStack: string[];
+    msgsStack: Message[];
 
     /**
      * Initialized / Connects the Matrix Client
@@ -48,7 +50,7 @@ export class MatrixHandler {
             return;
         
         let msg = this.msgsStack.shift();
-        this.client.sendText(Config.matrix.room, msg);
+        this.client.sendText(msg.channel, msg.text);
     }
 
     /**
@@ -56,8 +58,15 @@ export class MatrixHandler {
      * @param author - ID of the quote's author
      * @param txt - The quote in question
      */
-     async onQuote(author: string, txt: string)
+     async onQuote(quote: Quote)
      {
-        //this.msgsStack.push(txt);
+        for (let room in Config.matrix.groups)
+        {
+            let members = Config.matrix.groups[room];
+            members.forEach(member => {
+                if (member === quote.authorId)
+                    this.msgsStack.push(new Message(room, quote.text + " - " + quote.authorName));
+            });
+        }
      }
 }
